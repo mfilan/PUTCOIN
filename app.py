@@ -285,37 +285,40 @@ def update_macd(row):
 
     shortEMA = sub_df.Close.ewm(span=12, adjust=False).mean()
     longEMA = sub_df.Close.ewm(span=26, adjust=False).mean()
-    macd = shortEMA - longEMA
-    signal = macd.ewm(span=9, adjust=False).mean()
-    idx = np.argwhere(np.diff(np.sign(signal - macd))).flatten()
+    sub_df['macd'] = shortEMA - longEMA
+    sub_df['signal'] = sub_df['macd'].ewm(span=9, adjust=False).mean()
+    idx = np.argwhere(np.diff(np.sign(    sub_df['signal'] -     sub_df['macd']))).flatten()
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=sub_df['Date'], y=macd, name='MACD',
+    fig.add_trace(go.Scatter(x=sub_df['Date'], y= sub_df['macd'], name='MACD',
                              line=dict(color='#00628b')))
-    fig.add_trace(go.Scatter(x=sub_df['Date'], y=signal, name='Signal line',
+    fig.add_trace(go.Scatter(x=sub_df['Date'], y=sub_df['signal'], name='Signal line',
                              line=dict(color='#E8B34A')))
 
-    if signal[0] > macd[0]:
-        buy = True
-    else:
-        buy = False
-    for pos_x in idx:
-        fig.add_vline(
-            x=sub_df['Date'][pos_x], line_width=1,
-            line_color=("green" if buy else "red"))
-        buy = not buy
-
-    fig.add_trace(go.Scatter(mode="markers", x=sub_df['Date'][idx], y=, marker_symbol=symbols,
-               marker_line_color="midnightblue", marker_color="lightskyblue",
-               marker_line_width=2, marker_size=15,
-               hovertemplate="name: %{y}%{x}<br>number: %{marker.symbol}<extra></extra>"))
+    buy_sell = sub_df.loc[idx]
+    fig.add_trace(go.Scatter(mode="markers", x=buy_sell['Date'], y=buy_sell['macd'], marker_symbol='arrow-up',
+                             marker_color="#3D9970",
+                             marker_size=15,
+                             hovertemplate="symbol"))
 
     fig.update_layout(
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         template='plotly_dark',
         # showlegend=False,
-        #width=300,
-        #height=500
+        height=250,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        margin=dict(
+            l=25,  # left margin
+            r=25,  # right margin
+            b=25,  # bottom margin
+            t=25,  # top margin)
+        )
     )
     fig.update_xaxes(visible=False)
     return fig
