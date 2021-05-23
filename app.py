@@ -64,7 +64,7 @@ app.layout = html.Div(children=[
         html.Div(className="tile",children=[
             html.Img(src=app.get_asset_url('putcoin2.png'), style={'height': 'auto', 'width': '300px',
                                             "margin": "25px 0px 50px 50px","float":"left"}),
-        ],style={"width":"100%","height":"100px","float":"left"}),
+        ],style={"width":" calc(95% + 50px)","height":"100px","float":"left"}),
         html.Div(children=[
             html.Div(className="tile",children=[
                 html.Div(children = [
@@ -142,12 +142,14 @@ app.layout = html.Div(children=[
                            "investments. Clear and insightful visualization of cryptocurrencies data dating back as "
                            "far as 2014 give a solid fundaments for analyzing changes in the stock market.  "),
                     html.P("Created by: Mikołaj Kruś & Maciej Filanowicz",style={"text-align":"right"})
-                ],style={"margin":"30px"}
+                ],style={"margin":"25px"}
             ),
 
 
         ],
                  style={'width': '55%', "float": "left", "height": "300px", "margin-top": "25px","margin-left":"25px"}),
+        html.Div(style={'width': '100%', "float": "left", "height": "100px"}),
+
     ],style={"width":"90%","height":"100%","overflowX":"hidden","position":"fixed","top":"25px","left":"5%",
              "padding-right":"5%","overflow-y": "scroll","padding-bottom":"25px"})
 
