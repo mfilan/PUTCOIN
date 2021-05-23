@@ -11,8 +11,6 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 from plotly.validators.scatter.marker import SymbolValidator
 
-#tlo 051c28 051628
-
 # Read the data
 frames = []
 for f in glob.glob("data/coin_*.csv"):
@@ -111,21 +109,24 @@ app.layout = html.Div(children=[
                        "maxwidth": "25%", "margin-top": "25px"}
             )
         ]),
-        html.Div(className="tile",children=[
-                    dcc.Graph(
-                        id='candle',
-                        figure=px.line(template='plotly_dark').update_layout(
-                            {'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-                             'paper_bgcolor': 'rgba(0, 0, 0, 0)',"height":350},),
-                        config={
-                            'displayModeBar': False
-                        }
-                    ),
-                ],style={'float':'left',"display":"block","width":"70%","margin-top":"25px","margin-left":"25px",
-                         "box-shadow:":"5px 10px red","height":"350px"}),
-        html.Div(className="tile",children=[dcc.Graph(figure={"layout":{"height": 200}}, config={
-                    'displayModeBar': False})],
-                 style={'width': '25%', "float": "left", "height": "200px","margin-top":"25px"}),
+        html.Div(className="tile", children=[
+            dcc.Graph(
+                id='candle',
+                figure=px.line(template='plotly_dark').update_layout(
+                    {'plot_bgcolor': 'rgba(0, 0, 0, 0)',
+                     'paper_bgcolor': 'rgba(0, 0, 0, 0)', "height": 350}, ),
+                config={
+                    'displayModeBar': False
+                }
+            ),
+        ], style={'float': 'left', "display": "block", "width": "70%", "margin-top": "25px", "margin-left": "25px",
+                  "box-shadow:": "5px 10px red", "height": "350px"}),
+        html.Div(className="tile",children = [
+            html.Div(id='numbers',style={"margin": "20px"})
+        ],style={'width': '25%', "float": "left", "height": "200px", "margin-top": "25px"}),
+        # html.Div(id='numbers', className="tile", children=[],
+        #          style=
+        #          ),
         html.Div(className="tile",children=[
             dcc.Graph(id="indexes",figure={"layout":{"height": 200}}, config={
                     'displayModeBar': False})],style={'float':'left',"height":"200px","width":"70%",
@@ -156,7 +157,63 @@ app.layout = html.Div(children=[
     #
 ],style={  "box-sizing": "border-box","margin": "0","overflow":"hidden"})
 
+@app.callback(
+    Output('numbers', 'children'),
+    [Input('table', 'active_cell')]
+)
+def update_numbers(row):
+    if row is None:
+        currency = 'Aave'
+    else:
+        currency = pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']
+    sub_df = df.loc[df['Name'] == currency].round(4)
+    cols = ['Timestamp', 'High', 'Low', 'Close', 'Volume']
+    table_data = []
+    for timeframe,name in zip([1,7,30],['Day','Week','Month']):
+        time_df = sub_df[-timeframe*2:]
+        dfs = np.split(time_df, [timeframe], axis=0)
+        row = {'Timestamp': name,
+               'High': (dfs[1]['High'].mean() - dfs[0]['High'].mean()).round(4),
+               'Low': (dfs[1]['Low'].mean() - dfs[0]['Low'].mean()).round(4),
+               'Close': (dfs[1]['Close'].mean() - dfs[0]['Close'].mean()).round(4),
+               'Volume': (dfs[1]['Volume'].mean() - dfs[0]['Volume'].mean()).round(2),
 
+               }
+        table_data.append(row)
+    children = [dash_table.DataTable(
+                        id='table2',
+                        columns=[
+                            {"name": i, "id": i, "deletable": False, "selectable": False} for i in cols
+                        ],
+                        data=table_data,
+                        editable=False,
+                        style_data={'border': 'none','width':"60%"},
+                        style_cell={
+                            'backgroundColor': 'rgb(0, 0, 0,0)',
+                        },
+                        style_cell_conditional=[{
+                            'if': {
+                                'filter_query': '{'+f'{i}'+'} > 0',
+                                'column_id': f'{i}'
+                            },
+                                'color': '#3D9970'
+                        } for i in cols[1:]
+
+                        ]+ [
+                            {
+                                'if': {
+                                    'filter_query': '{' + f'{i}' + '} < 0',
+                                    'column_id': f'{i}'
+                                },
+                                'color': '#FF3131'
+                            } for i in cols[1:]
+                        ],
+                        style_header={'backgroundColor': 'rgb(0, 0, 0,0)',
+                                      'fontWeight': 'bold',
+                                      "color":"#fffff","border":'none'},
+                        fill_width=False,
+                    )]
+    return children
 # Callback
 @app.callback(
     Output('indexes', 'figure'),
