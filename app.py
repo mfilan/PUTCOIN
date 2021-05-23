@@ -9,6 +9,7 @@ from dash.dependencies import Input, Output, State
 import plotly.express as px
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+from plotly.validators.scatter.marker import SymbolValidator
 
 #tlo 051c28 051628
 
@@ -129,7 +130,7 @@ app.layout = html.Div(children=[
             dcc.Graph(id="indexes",figure={"layout":{"height": 200}}, config={
                     'displayModeBar': False})],style={'float':'left',"height":"200px","width":"70%",
                                                       "margin-top":"25px","margin-left":"25px"}),
-        html.Div(className="tile", children=[dcc.Graph(figure={"layout": {"height": 300}}, config={
+        html.Div(className="tile", children=[dcc.Graph(id='macd', config={
             'displayModeBar': False})],
                  style={'width': '40%', "float": "left", "height": "300px", "margin-top": "25px"}),
         html.Div(className="tile", children=[
@@ -160,7 +161,12 @@ app.layout = html.Div(children=[
     [Input('table', 'active_cell')]
 )
 def update_graph(row):
-    sub_df = df.loc[df['Name'] == pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']]
+    if row is None:
+        currency = 'Aave'
+    else:
+        currency = pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']
+    sub_df = df.loc[df['Name'] == currency]
+
     fig = make_subplots(rows=1, cols=3)
     moving_avg = sub_df['Close'].rolling(center=False, window=40).mean().dropna().reset_index(drop=True)
     fig.append_trace(go.Scatter(y=moving_avg, line=dict(color='#00628b')), row=1, col=1)
@@ -194,7 +200,12 @@ def update_graph(row):
     [Input('table', 'active_cell')]
 )
 def update_figure(row):
-    sub_df = df.loc[df['Name'] == pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']]
+    if row is None:
+        currency = 'Aave'
+    else:
+        currency = pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']
+    sub_df = df.loc[df['Name'] == currency]
+
     # Create figure with secondary y-axis
     fig = make_subplots(
         specs=[[{"secondary_y": True}]])
@@ -207,7 +218,7 @@ def update_figure(row):
             high=sub_df['High'],
             low=sub_df['Low'],
             close=sub_df['Close'],
-            name=pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']),
+            name=currency),
         secondary_y=True)
 
     # include a go.Bar trace for volumes
@@ -261,6 +272,53 @@ def update_figure(row):
         secondary_y=True)
     return fig
 
+@app.callback(
+    Output('macd', 'figure'),
+    [Input('table', 'active_cell')]
+)
+def update_macd(row):
+    if row is None:
+        currency = 'Aave'
+    else:
+        currency = pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']
+    sub_df = df.loc[df['Name'] == currency]
+
+    shortEMA = sub_df.Close.ewm(span=12, adjust=False).mean()
+    longEMA = sub_df.Close.ewm(span=26, adjust=False).mean()
+    macd = shortEMA - longEMA
+    signal = macd.ewm(span=9, adjust=False).mean()
+    idx = np.argwhere(np.diff(np.sign(signal - macd))).flatten()
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=sub_df['Date'], y=macd, name='MACD',
+                             line=dict(color='#00628b')))
+    fig.add_trace(go.Scatter(x=sub_df['Date'], y=signal, name='Signal line',
+                             line=dict(color='#E8B34A')))
+
+    if signal[0] > macd[0]:
+        buy = True
+    else:
+        buy = False
+    for pos_x in idx:
+        fig.add_vline(
+            x=sub_df['Date'][pos_x], line_width=1,
+            line_color=("green" if buy else "red"))
+        buy = not buy
+
+    fig.add_trace(go.Scatter(mode="markers", x=sub_df['Date'][idx], y=, marker_symbol=symbols,
+               marker_line_color="midnightblue", marker_color="lightskyblue",
+               marker_line_width=2, marker_size=15,
+               hovertemplate="name: %{y}%{x}<br>number: %{marker.symbol}<extra></extra>"))
+
+    fig.update_layout(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        template='plotly_dark',
+        # showlegend=False,
+        #width=300,
+        #height=500
+    )
+    fig.update_xaxes(visible=False)
+    return fig
 # Run the app
 if __name__ == '__main__':
     app.run_server()
