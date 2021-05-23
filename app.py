@@ -167,7 +167,7 @@ def update_graph(row):
         currency = pct_change_df.drop_duplicates().to_dict('records')[row['row']]['Name']
     sub_df = df.loc[df['Name'] == currency]
 
-    fig = make_subplots(rows=1, cols=3)
+    fig = make_subplots(rows=1, cols=3, shared_xaxes=True)
     moving_avg = sub_df['Close'].rolling(center=False, window=40).mean().dropna().reset_index(drop=True)
     fig.append_trace(go.Scatter(y=moving_avg, line=dict(color='#00628b')), row=1, col=1)
     on_balance_value = (np.sign(sub_df['Close'].diff()) * sub_df['Volume']).fillna(0).cumsum()
@@ -184,6 +184,7 @@ def update_graph(row):
         template='plotly_dark',
         height = 200,
         showlegend=False,
+        hovermode='x',
         margin=dict(
             l=0,  # left margin
             r=0,  # right margin
@@ -245,6 +246,7 @@ def update_figure(row):
         {'plot_bgcolor': 'rgba(0, 0, 0, 0)',
          'paper_bgcolor': 'rgba(0, 0, 0, 0)'},
         template='plotly_dark',
+        hovermode='x',
         barmode='group',
         bargroupgap=0,
         bargap=0,
@@ -295,16 +297,31 @@ def update_macd(row):
                              line=dict(color='#E8B34A')))
 
     buy_sell = sub_df.loc[idx]
-    fig.add_trace(go.Scatter(mode="markers", x=buy_sell['Date'], y=buy_sell['macd'], marker_symbol='arrow-up',
-                             marker_color="#3D9970",
-                             marker_size=15,
-                             hovertemplate="symbol"))
+    arrow = []
+    x = buy_sell['macd'][0] < buy_sell['signal'][0]
+    for i in range(len(buy_sell)):
+        arrow.append(x)
+        x = not x
+    fig.add_trace(go.Scatter(mode="markers", x=buy_sell['Date'], y=buy_sell['macd'],
+                             marker_symbol=['arrow-up' if i else 'arrow-down' for i in arrow],
+                             marker_color=["#3D9970" if i else '#FF3131' for i in arrow],
+                             marker_size=9,
+                             hovertemplate=['<extra></extra>recommendation to buy' if i else ' <extra></extra>recommendation to sell' for i in arrow],
+                             showlegend=False))
 
+    fig.add_trace(
+        go.Bar(
+            x=sub_df['Date'],
+            y=sub_df['macd'] - sub_df['signal'],
+            opacity=0.5,
+            marker={'color': '#00628B', 'line_color': '#00628B'},
+            name="Difference"))
     fig.update_layout(
+        title="MACD Indicator",
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         template='plotly_dark',
-        # showlegend=False,
+        hovermode='x',
         height=250,
         legend=dict(
             orientation="h",
@@ -320,8 +337,64 @@ def update_macd(row):
             t=25,  # top margin)
         )
     )
-    fig.update_xaxes(visible=False)
+    fig.update_yaxes(visible=False)
     return fig
+
+### INFORMATION SECTION CALLBACK ###
+@app.callback(
+    Output('about', 'children'),
+    [
+        Input('candle', 'hoverData'),
+        Input('macd', 'hoverData'),
+        Input('indexes', 'hoverData'),
+    ],
+    prevent_initial_call=True
+)
+def info_change(in1, in2, in3):
+    ctx = dash.callback_context
+
+    if not ctx.triggered:
+        input_id = 'No clicks yet'
+    else:
+        input_id = ctx.triggered[0]['prop_id'].split('.')[0]
+    if input_id == 'candle':
+        children = [
+            html.H5("CANDLESTICK CHART", style={"text-align": "center"}),
+            html.P("It is perhaps the most common visual aid for decision making in stock trading."
+                   " Looking at a candlestick, one can identify an asset’s opening and closing prices, highs and lows, and overall range for a specific time frame."
+                   " Candlestick charts serve as a cornerstone of technical analysis. For example, when the bar is green and high relative to other time periods,"
+                   " it means buyers are very bullish. The opposite is true for a red bar."),
+            html.P("Created by: Mikołaj Kruś & Maciej Filanowicz", style={"text-align": "right"})
+        ]
+        return children
+    if input_id == 'macd':
+        children = [
+            html.H5("MOVING AVERAGE CONVERGENCE/DIVERGENCE", style={"text-align": "center"}),
+            html.P(
+                "The MACD indicator is a collection of three time series calculated from historical price data, most often the closing price."
+                " Exponential moving averages highlight recent changes in a stock's price. By comparing EMAs of different lengths,"
+                " the MACD series gauges changes in the trend of a stock."
+                " It is recommended to buy if the MACD line crosses up through the signal line, or to sell if it crosses down through the signal line."),
+            html.P("Created by: Mikołaj Kruś & Maciej Filanowicz", style={"text-align": "right"})
+        ]
+        return children
+
+    if input_id == 'indexes':
+        children = [
+            html.H5("TECHNICAL INDICATORS", style={"text-align": "center"}),
+            html.P(
+                "MOVING AVERAGE: Given a series of numbers and a fixed subset size, the first element of the moving average is obtained by taking the average of the initial fixed subset of the number series."
+                " Then the subset is modified by excluding the first number of the series and including the next value in the subset."),
+            html.P(
+                "ON_BALANCE VOLUME: When prices are going up, OBV should be going up too, and when prices make a new rally high, then OBV should too."
+                " If OBV fails to go past its previous rally high, then this is a negative divergence, suggesting a weak move."),
+            html.P(
+                "RELATIVE STRENGTH INDEX: The RSI computes momentum as the ratio of higher closes to lower closes:"
+                " stocks which have had more or stronger positive changes have a higher RSI than stocks which have had more or stronger negative changes."),
+            html.P("Created by: Mikołaj Kruś & Maciej Filanowicz", style={"text-align": "right"})
+        ]
+        return children
+
 # Run the app
 if __name__ == '__main__':
     app.run_server()
