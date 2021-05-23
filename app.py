@@ -10,6 +10,8 @@ import plotly.express as px
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+#tlo 051c28 051628
+
 # Read the data
 frames = []
 for f in glob.glob("data/coin_*.csv"):
@@ -58,12 +60,13 @@ def get_mini_plots():
     return fig
 app.layout = html.Div(children=[
     html.Div(children=[
-        html.Div(children=[
-            html.Img(src=app.get_asset_url('PUTCOIN.png'), style={'height': 'auto', 'width': '200px',
+        html.Div(className="tile",children=[
+            html.Img(src=app.get_asset_url('putcoin2.png'), style={'height': 'auto', 'width': '300px',
                                             "margin": "25px 0px 50px 50px","float":"left"}),
         ],style={"width":"100%","height":"100px","float":"left"}),
         html.Div(children=[
-            html.Div(children=[
+            html.Div(className="tile",children=[
+                html.Div(children = [
                 html.Div(children=[
                     dash_table.DataTable(
                         id='table',
@@ -74,7 +77,7 @@ app.layout = html.Div(children=[
                         editable=False,
                         style_header={'backgroundColor': 'rgb(0, 0, 0,0)',
                                       'display': 'none'},
-                        style_data={'border': 'none'},
+                        style_data={'border': 'none','width':"60%"},
                         style_cell={
                             'backgroundColor': 'rgb(0, 0, 0,0)',
                         },
@@ -83,7 +86,7 @@ app.layout = html.Div(children=[
                                 'filter_query': '{Open_pct_change} > 0',
                                 'column_id': 'Open_pct_change'
                             },
-                            'color': '#3D9970'
+                                'color': '#3D9970'
                         }, {
                             'if': {
                                 'filter_query': '{Open_pct_change} < 0',
@@ -92,42 +95,63 @@ app.layout = html.Div(children=[
                             'color': '#FF3131'
                         }
                         ],
-                        fill_width=False
+                        fill_width=False,
                     ), dcc.Graph(id="mini_plots", figure=get_mini_plots(), config={
                         'displayModeBar': False
                     }),
-                ],
-                    style={'height': '100%', 'overflowY': 'auto', "width": "100%", "display": "flex",
+                ],style={ "display": "flex","width": "max-content","margin": "auto"}
+                )],
+                    style={'height': '100%', 'overflowY': 'auto', "width": "100%",
                            "overflowX": "hidden",
-                           "padding-right": "17px"},
+                           "padding-right": "27px"},
                 )
             ],
-                style={'height': '450px', "width": "25%", "overflow": "hidden", "float": "left", "display": "block",
-                       "maxwidth": "25%", "margin-top": "20px"}
+                style={'height': '350px', "width": "25%", "overflow": "hidden", "float": "left", "display": "block",
+                       "maxwidth": "25%", "margin-top": "25px"}
             )
         ]),
-        html.Div(children=[
+        html.Div(className="tile",children=[
                     dcc.Graph(
                         id='candle',
                         figure=px.line(template='plotly_dark').update_layout(
                             {'plot_bgcolor': 'rgba(0, 0, 0, 0)',
-                             'paper_bgcolor': 'rgba(0, 0, 0, 0)'}),
+                             'paper_bgcolor': 'rgba(0, 0, 0, 0)',"height":350},),
                         config={
                             'displayModeBar': False
                         }
                     ),
-                ],style={'float':'left',"display":"block","width":"75%","margin-top":"25px"}),
-        html.Div(children=[dcc.Graph(figure={"layout":{"height": 200}}, config={
+                ],style={'float':'left',"display":"block","width":"70%","margin-top":"25px","margin-left":"25px",
+                         "box-shadow:":"5px 10px red","height":"350px"}),
+        html.Div(className="tile",children=[dcc.Graph(figure={"layout":{"height": 200}}, config={
                     'displayModeBar': False})],
                  style={'width': '25%', "float": "left", "height": "200px","margin-top":"25px"}),
-        html.Div(children=[
-            dcc.Graph(id="indexes", config={
-                    'displayModeBar': False})],style={'float':'left' ,"height":"200px","margin-top":"25px",
-                                                      "margin-left":"25px"})
-    ],style={"width":"100%","height":"100%","overflowX":"hidden","position":"fixed","top":"0","left":"0"})
+        html.Div(className="tile",children=[
+            dcc.Graph(id="indexes",figure={"layout":{"height": 200}}, config={
+                    'displayModeBar': False})],style={'float':'left',"height":"200px","width":"70%",
+                                                      "margin-top":"25px","margin-left":"25px"}),
+        html.Div(className="tile", children=[dcc.Graph(figure={"layout": {"height": 300}}, config={
+            'displayModeBar': False})],
+                 style={'width': '40%', "float": "left", "height": "300px", "margin-top": "25px"}),
+        html.Div(className="tile", children=[
+            html.Div(
+                id="about",
+                children=[
+                    html.H5("ABOUT", style={"text-align":"center"}),
+                    html.P("An irreplaceable platform that can help you with your first steps in stock "
+                           "investments. Clear and insightful visualization of cryptocurrencies data dating back as "
+                           "far as 2014 give a solid fundaments for analyzing changes in the stock market.  "),
+                    html.P("Created by: Mikołaj Kruś & Maciej Filanowicz",style={"text-align":"right"})
+                ],style={"margin":"30px"}
+            ),
+
+
+        ],
+                 style={'width': '55%', "float": "left", "height": "300px", "margin-top": "25px","margin-left":"25px"}),
+    ],style={"width":"90%","height":"100%","overflowX":"hidden","position":"fixed","top":"25px","left":"5%",
+             "padding-right":"5%","overflow-y": "scroll","padding-bottom":"25px"})
 
     #
-],style={  "box-sizing": "border-box","margin": "0"})
+],style={  "box-sizing": "border-box","margin": "0","overflow":"hidden"})
 
 
 # Callback
@@ -177,7 +201,7 @@ def update_figure(row):
 
     # include candlestick with rangeselector
     fig.add_trace(
-        go.Candlestick(
+        go.Ohlc(
             x=sub_df['Date'],
             open=sub_df['Open'],
             high=sub_df['High'],
@@ -192,7 +216,7 @@ def update_figure(row):
             x=sub_df['Date'],
             y=sub_df['Volume'],
             opacity=0.75,
-            marker={'color': 'steelblue', 'line_color': 'steelblue'},
+            marker={'color': '#00628B', 'line_color': '#00628B'},
             name="Volume"),
         secondary_y=False)
 
@@ -201,7 +225,7 @@ def update_figure(row):
         go.Scatter(
             x=sub_df['Date'],
             y=sub_df['Marketcap'],
-            line=dict(color='orange'),
+            line=dict(color='#E8B34A'),
             name="Marketcap"),
         secondary_y=False)
 
@@ -213,6 +237,15 @@ def update_figure(row):
         barmode='group',
         bargroupgap=0,
         bargap=0,
+        height = 350,
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        # showlegend=False,
         margin=dict(
             l=0,  # left margin
             r=0,  # right margin

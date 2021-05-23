@@ -419,7 +419,7 @@ html, body{
 }
 
 body {
-  background-color: #1E1E1E;
+  background-color: #051628;
   color: #d8d8d8;
   height: 100%;
   margin: 0;
@@ -444,6 +444,11 @@ p {
 }
 a {
   text-decoration: none;
+}
+.tile{
+    background-color: #04101d;
+    border-radius: 20px;
+    padding:10px;
 }
 .bg-grey{
   background-color: #31302F;
@@ -632,3 +637,5 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: #d8d8d870 !important;
 }
+
+
