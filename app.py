@@ -169,11 +169,15 @@ def update_graph(row):
 
     fig = make_subplots(rows=1, cols=3, shared_xaxes=True)
     moving_avg = sub_df['Close'].rolling(center=False, window=40).mean().dropna().reset_index(drop=True)
-    fig.append_trace(go.Scatter(y=moving_avg, line=dict(color='#00628b')), row=1, col=1)
+    fig.append_trace(go.Scatter(y=moving_avg, line=dict(color='#00628b'),hovertemplate =
+    'AVG: %{y:.2f}<extra></extra>',), row=1, col=1)
     on_balance_value = (np.sign(sub_df['Close'].diff()) * sub_df['Volume']).fillna(0).cumsum()
-    fig.append_trace(go.Scatter(y=on_balance_value, line=dict(color='#00628b')), row=1, col=2)
+    fig.append_trace(go.Scatter(y=on_balance_value, line=dict(color='#00628b'),hovertemplate =
+    'OBV: %{y:.2f}<extra></extra>',), row=1, col=2)
     rsiN = sub_df['Close'].diff().rolling(center=False, window=6).apply(rsi)
-    fig.append_trace(go.Scatter(y=rsiN, line=dict(color='#00628b')), row=1, col=3)
+    fig.append_trace(go.Scatter(y=rsiN, line=dict(color='#00628b'),hovertemplate =
+    'RSI: %{y:.2f}<extra></extra>',
+                                ), row=1, col=3)
     fig.update_xaxes(showticklabels=False, showgrid = False)
     fig['layout']['xaxis1']['title'] = 'Moving AVG'
     fig['layout']['xaxis2']['title'] = 'OBV'
@@ -184,7 +188,7 @@ def update_graph(row):
         template='plotly_dark',
         height = 200,
         showlegend=False,
-        hovermode='x',
+        # hovermode='x',
         margin=dict(
             l=0,  # left margin
             r=0,  # right margin
@@ -359,10 +363,12 @@ def info_change(in1, in2, in3):
         input_id = ctx.triggered[0]['prop_id'].split('.')[0]
     if input_id == 'candle':
         children = [
-            html.H5("CANDLESTICK CHART", style={"text-align": "center"}),
+            html.H5("OHLC CHART", style={"text-align": "center"}),
             html.P("It is perhaps the most common visual aid for decision making in stock trading."
-                   " Looking at a candlestick, one can identify an asset’s opening and closing prices, highs and lows, and overall range for a specific time frame."
-                   " Candlestick charts serve as a cornerstone of technical analysis. For example, when the bar is green and high relative to other time periods,"
+                   " Looking at a ohlc plot, one can identify an asset’s opening and closing prices, highs and lows, "
+                   "and overall range for a specific time frame."
+                   " OHLC charts serve as a cornerstone of technical analysis. For example, when the bar is green and "
+                   "high relative to other time periods,"
                    " it means buyers are very bullish. The opposite is true for a red bar."),
             html.P("Created by: Mikołaj Kruś & Maciej Filanowicz", style={"text-align": "right"})
         ]
